@@ -1,35 +1,97 @@
-pragma solidity ^0.4.26;
+pragma solidity 0.4.26;
 
-contract sendEth{
+contract voting {
+    
+    mapping (address => bool) member;
+   
     address public owner;
+    uint256 public countMember = 0;
     
     constructor() public payable{
         owner = msg.sender;
     }
     
-    modifier onlyOwner(){
-        require(msg.sender == owner,"chi goi den owner");//kiem tra owner
+    event Deposit(address indexed member, uint256 value);
+    event Withdraw(address indexed member, uint256 value);
+    
+    struct Voting{
+        address adrFrom;
+        uint256 money;
+        uint yesVote;
+        uint noVote;
+        bool execute;
+    }
+    
+    mapping(uint256 => Voting) public listVote;
+    uint256 size = 0;
+    
+    mapping (address => mapping ( uint256 => bool )) public isVoted; // member vote chua?
+    
+    modifier onlyOwner() {
+        require(msg.sender == owner,"chi goi den owner");
         _;
+    }
+    
+    modifier onlyMember() {
+        require(member[msg.sender] == true,"chi goi den member");
+        _;
+    }
+    
+    function addMember(address newMember) public onlyOwner returns(bool) {
+        require(member[newMember] != true, "da la member");
+        member[newMember] = true;
+        countMember += 1;
+    }
+    
+    function removeMember(address oldMember) public onlyOwner returns(bool) {
+        require(member[oldMember] == true, "chua la member");
+        member[oldMember] = false;
+        countMember -= 1;
     }
     
     function getBalance() public view returns (uint256) {
          return address(this).balance;
     }
      
-    function deposit() payable public {
+    function deposit() payable onlyMember public {
+        emit Deposit(msg.sender, msg.value);
     }
     
-    function depositAmount(uint256 amount) payable public { 
+    function depositAmount(uint256 amount) payable onlyMember public { 
          require(msg.value == amount);
+         emit Deposit(msg.sender, msg.value);
+    }
+    function voteYes(uint256 idVote) onlyMember public {
+        require(isVoted[msg.sender][idVote] == false ,"da vote roi" );
+        require(listVote[idVote].adrFrom != msg.sender, "khong vote chinh minh");
+        listVote[idVote].yesVote+=1;
+        
+        if (listVote[idVote].yesVote > countMember * 50 / 100){
+            listVote[idVote].execute = true;
+            execution(listVote[idVote].money);
+        }
+        else{
+            listVote[idVote].execute = false;
+            // ko thuc thi
+        }
     }
     
-    function withdraw() onlyOwner public {
-         msg.sender.transfer(address(this).balance);
+    function execution(uint256 amount) onlyMember  payable public {
+        require(this.balance >= amount, "Khong du");
+        msg.sender.transfer(amount); 
+        emit Withdraw(msg.sender, amount);
     }
-    
-    function withdrawAmount(uint256 amount) onlyOwner payable public { 
-         require(amount <= getBalance());
-        //  msg.sender.transfer(amount); //this not work
-         msg.sender.transfer(getBalance()); // this ok
+       
+    function withdrawAmount(uint256 amount) onlyMember payable public {
+        Voting memory vote = Voting({
+            adrFrom: msg.sender,
+            money: amount,
+            yesVote: 0,
+            noVote : 0,
+            execute : false
+        });
+        size++;
+        listVote[size] = vote;
+        
      }
 }
