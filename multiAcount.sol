@@ -1,6 +1,6 @@
 pragma solidity 0.4.26;
 
-contract voting {
+contract multiAcount {
     
     mapping (address => bool) member;
    
