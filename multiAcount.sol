@@ -1,11 +1,15 @@
 pragma solidity 0.4.26;
 
-contract multiAcount {
+contract voting {
     
     mapping (address => bool) member;
    
     address public owner;
     uint256 public countMember = 0;
+    
+    constructor() public payable{
+        owner = msg.sender;
+    }
     
     event Deposit(address indexed member, uint256 value);
     event Withdraw(address indexed member, uint256 value);
@@ -65,12 +69,14 @@ contract multiAcount {
             execution(listVote[idVote].money);
         }
         else{
+            listVote[idVote].execute = false;
             // ko thuc thi
         }
     }
+    
     function execution(uint256 amount) onlyMember payable public {
         require(this.balance >= amount, "Khong du");
-        msg.sender.transfer(amount); //this not work
+        msg.sender.transfer(amount); 
         emit Withdraw(msg.sender, amount);
     }
        
