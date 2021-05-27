@@ -5,27 +5,31 @@ contract multiAcount {
     mapping (address => bool) member;
    
     address public owner;
-    uint32 public countMember = 0;
+    uint256 public countMember = 0;
     
     event Deposit(address indexed member, uint256 value);
     event Withdraw(address indexed member, uint256 value);
     
     struct Voting{
         address adrFrom;
-        uint256 balance;
+        uint256 money;
         uint yesVote;
         uint noVote;
+        bool execute;
     }
     
-    mapping (uint => mapping ( address => uint )) public voteMb;
+    mapping(uint256 => Voting) public listVote;
+    uint256 size = 0;
+    
+    mapping (address => mapping ( uint256 => bool )) public isVoted; // member vote chua?
     
     modifier onlyOwner() {
-        require(msg.sender == owner,"chi goi den owner");//kiem tra owner
+        require(msg.sender == owner,"chi goi den owner");
         _;
     }
     
     modifier onlyMember() {
-        require(member[msg.sender] == true,"chi goi den member");//kiem tra owner
+        require(member[msg.sender] == true,"chi goi den member");
         _;
     }
     
@@ -53,16 +57,33 @@ contract multiAcount {
          require(msg.value == amount);
          emit Deposit(msg.sender, msg.value);
     }
-    function vote() onlyMember public{
-        
+    function voteYes(uint256 idVote) onlyMember public view returns(uint256){
+        require(isVoted[msg.sender][idVote] == false ,"da vote roi" );
+        listVote[idVote].yesVote ++;
+        if (listVote[size].yesVote > countMember * 50 / 100){
+            listVote[idVote].execute = true;
+            execution(listVote[idVote].money);
+        }
+        else{
+            // ko thuc thi
+        }
     }
-    
-    function withdrawAmount(uint256 amount) onlyMember payable public {
-        //kiem tra vote co hon 50 % 
+    function execution(uint256 amount) onlyMember payable public {
         require(this.balance >= amount, "Khong du");
-         msg.sender.transfer(amount); //this not work
-         emit Withdraw(msg.sender, amount);
-        //  msg.sender.transfer(getBalance()); // this ok
+        msg.sender.transfer(amount); //this not work
+        emit Withdraw(msg.sender, amount);
+    }
+       
+    function withdrawAmount(uint256 amount) onlyMember payable public {
+        Voting memory vote = Voting({
+            adrFrom: msg.sender,
+            money: amount,
+            yesVote: 0,
+            noVote : 0,
+            execute : false
+        });
+        size++;
+        listVote[size] = vote;
+        
      }
-
 }
