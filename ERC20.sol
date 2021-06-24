@@ -44,6 +44,17 @@ contract ERC20 is IERC20 {
         return balances[tokenOwner];
     }
 
+    function _mint(address to, uint256 value) internal {
+        totalSupply_ = totalSupply_.add(value);
+        balances[to] = balances[to].add(value);
+        emit Transfer(address(0), to, value);
+    }
+
+    function _burn(address from, uint256 value) internal {
+        balances[from] = balances[from].sub(value);
+        totalSupply_ = totalSupply_.sub(value);
+        emit Transfer(from, address(0), value);
+    }
     function transfer(address receiver, uint256 numTokens) public override returns (bool) {
         require(numTokens <= balances[msg.sender]);
         balances[msg.sender] = balances[msg.sender].sub(numTokens);
